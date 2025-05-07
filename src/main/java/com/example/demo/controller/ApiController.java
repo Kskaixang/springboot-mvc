@@ -117,6 +117,7 @@ public class ApiController {
 		if(scores == null || scores.size() == 0) {
 			return ResponseEntity.badRequest().body(ApiResponse.error("請輸入分數"));
 		}
+		//統計物件
 		IntSummaryStatistics stat = scores.stream().mapToInt(Integer::intValue).summaryStatistics();
 		//利用 Collectors.partitioningBy 分組
 		// Key=true 及格分數 | key = false 不及格
