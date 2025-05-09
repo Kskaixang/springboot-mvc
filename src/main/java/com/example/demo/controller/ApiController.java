@@ -211,9 +211,7 @@ public class ApiController {
 	 * 路徑 : /book/1 得到 id = 1 的書
 	 * 網址 http://localhost:8080/api/book/1
 	 */
-	@V
-	@PutMapping
-	@DeleteMapping
+	
 	
 	
 	@GetMapping(value = "/book/{id}", produces = "application/json;charset=utf-8")
