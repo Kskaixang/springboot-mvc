@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -11,12 +12,17 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.BMI;
+import com.example.demo.model.Book;
 import com.example.demo.responce.ApiResponse;
 
 //@RestController免去撰寫 @ResponseBody 但若要透過JSP 渲染 則不可用
@@ -132,5 +138,112 @@ public class ApiController {
 				"不及格",resultMap.get(false));
 				
 		return ResponseEntity.ok(ApiResponse.success("計算成功", data));
+		
+	
+		
+	}
+	/*
+	 * 7. 多筆參數轉 Map
+	 * name 書名(String), price 價格(Double), amount 數量(Integer), pub 出刊/停刊(Boolean)
+	 * 路徑: /book?name=Math&price=12.5&amount=10&pub=true
+	 * 路徑: /book?name=English&price=10.5&amount=20&pub=false
+	 * 網址: http://localhost:8080/api/book?name=Math&price=12.5&amount=10&pub=true
+	 * 網址: http://localhost:8080/api/book?name=English&price=10.5&amount=20&pub=false
+	 * 讓參數自動轉成 key/value 的 Map 集合
+	 * */
+	@GetMapping(value = "/book", produces = "application/json;charset=utf-8")
+	public ResponseEntity<ApiResponse<Object>> getBookInfo(@RequestParam Map<String, Object> bookMap) {
+		System.out.println(bookMap);
+		return ResponseEntity.ok(ApiResponse.success("回應成功", bookMap));
+	}
+	/*
+	 {
+	  "message": "回應成功",
+	  "data": {
+	    "name": "Math",
+	    "price": "12.5",
+	    "amount": "10",
+	    "pub": "true"
+	  }
+	}
+	*/
+	
+	
+	
+	/*
+	 * 8.多筆參數轉指定model物件  日後你可以添加進資料入啊? 陣列阿
+	 * 路徑網址 同上
+	 * 
+	 * 上面是用 Map去接收   這邊是用 model物件去接
+	 */
+	@GetMapping(value = "/book2", produces = "application/json;charset=utf-8")
+	public ResponseEntity<ApiResponse<Object>> getBookInfo2(Book book) {
+		book.setId(1);
+		System.out.println(book);		
+		return ResponseEntity.ok(ApiResponse.success("回應成功2", book));
+	}
+	/*
+	 	{
+		  "message": "回應成功2",
+		  "data": {
+		    "id": null,
+		    "name": "Math",
+		    "price": 12.5,
+		    "amount": 10,
+		    "pub": true
+		  }
+		}
+	 */
+	
+	/*
+	 * 9.路徑參數  網址設計 核心知識
+	 * 在以前的方法 早期設計風格
+	 * 路徑 : /book?id=1 得到 id = 1 的書
+	 * 網址 http://localhost:8080/api/book/1
+	 * 
+	 * (Rest)現在的方法 不需要寫'?'  表現層狀態轉換（英語：Representational State Transfer，縮寫：REST
+	 * GET /books    **查詢所有書籍
+	 * GET /book/1   **查詢單筆書籍
+	 * POST /book    **新增書籍
+	 * PUT /book/1   **修改單筆書籍
+	 * DELETE /book/1 **刪除單筆書籍  這是一種設計風格 不是死規矩
+	 * 重點用於 呈現某一件商品  一件喔!
+	 * 路徑 : /book/1 得到 id = 1 的書
+	 * 網址 http://localhost:8080/api/book/1
+	 */
+	@V
+	@PutMapping
+	@DeleteMapping
+	
+	
+	@GetMapping(value = "/book/{id}", produces = "application/json;charset=utf-8")
+	public ResponseEntity<ApiResponse<Book>> getBookInfo3(@PathVariable(name = "id") Integer id) {
+		List<Book> books = List.of(
+					new Book(1,"A",12.5,20,false),
+					new Book(2,"B",10.5,20,false),
+					new Book(3,"C",8.5,20,true),
+					new Book(4,"D",12.5,20,true)
+				);
+		//搜尋該筆書籍 判斷是否有找到
+		Optional<Book> opBook = books.stream().filter(book -> book.getId().equals(id)).findFirst();
+		if(opBook.isEmpty()) {
+			return ResponseEntity.badRequest().body(ApiResponse.error("錯誤:找不到或是參數錯誤"));
+		}				
+		return ResponseEntity.ok(ApiResponse.success("回應成功", opBook.get()));
+	}
+	
+	@GetMapping(value = "/book/pub/{isPub}", produces = "application/json;charset=utf-8")
+	public ResponseEntity<ApiResponse<List<Book>>> queryBook(@PathVariable Boolean isPub) {
+		List<Book> books = List.of(
+					new Book(1,"A",12.5,20,false),
+					new Book(2,"B",10.5,20,false),
+					new Book(3,"C",8.5,20,true),
+					new Book(4,"D",12.5,20,true)
+				);
+		List<Book> tureBooks = books.stream().filter(book -> book.getPub().equals(isPub)).toList();
+		if(tureBooks.size() == 0) {
+			return ResponseEntity.badRequest().body(ApiResponse.error("錯誤:找不到或是參數錯誤"));
+		}				
+		return ResponseEntity.ok(ApiResponse.success("回應成功" + (isPub ? "出刊" : "停刊"), tureBooks));
 	}
 }
